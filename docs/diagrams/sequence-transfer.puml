@@ -1,0 +1,42 @@
+@startuml
+actor Client
+participant "API Gateway" as GW
+participant "Transaction Service" as TS
+participant Kafka
+participant "Account Service (Sender)" as AS1
+participant "Account Service (Receiver)" as AS2
+
+Client -> GW : POST /transactions/transfer
+GW -> TS : createTransfer
+TS -> TS : save PENDING
+TS -> Kafka : TransferRequested
+
+Kafka -> AS1 : TransferRequested
+AS1 -> AS1 : reserve funds
+alt success
+  AS1 -> Kafka : MoneyReserved
+else fail
+  AS1 -> Kafka : ReservationFailed
+end
+
+Kafka -> AS2 : MoneyReserved
+AS2 -> AS2 : credit receiver
+alt success
+  AS2 -> Kafka : MoneyCredited
+else fail
+  AS2 -> Kafka : CreditFailed
+end
+
+Kafka -> TS : MoneyCredited
+TS -> TS : mark COMPLETED
+TS -> Kafka : TransactionCompleted
+
+Kafka -> AS1 : CreditFailed
+AS1 -> AS1 : refund sender
+AS1 -> Kafka : RefundCompleted
+
+Kafka -> TS : RefundCompleted
+TS -> TS : mark FAILED
+TS -> Kafka : TransactionFailed
+
+@enduml

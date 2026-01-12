@@ -1,0 +1,13 @@
+@startuml
+actor Client
+participant "API Gateway" as GW
+participant "Account Service" as AS
+participant Kafka
+
+Client -> GW : POST /accounts
+GW -> AS : createAccount
+AS -> AS : persist account
+AS -> Kafka : publish AccountCreated
+AS -> GW : 201 Created
+GW -> Client : response
+@enduml

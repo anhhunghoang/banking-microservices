@@ -1,0 +1,21 @@
+@startuml
+actor Client
+participant "API Gateway" as GW
+participant "Transaction Service" as TS
+participant Kafka
+participant "Account Service" as AS
+
+Client -> GW : POST /transactions/deposit
+GW -> TS : createDeposit
+TS -> TS : save PENDING
+TS -> Kafka : DepositRequested
+
+Kafka -> AS : DepositRequested
+AS -> AS : credit balance
+AS -> Kafka : MoneyCredited
+
+Kafka -> TS : MoneyCredited
+TS -> TS : mark COMPLETED
+TS -> Kafka : TransactionCompleted
+
+@enduml

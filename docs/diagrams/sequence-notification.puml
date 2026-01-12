@@ -1,0 +1,11 @@
+@startuml
+participant Kafka
+participant "Notification Service" as NS
+
+Kafka -> NS : TransactionCompleted
+NS -> NS : send notification
+
+Kafka -> NS : TransactionFailed
+NS -> NS : send notification
+
+@enduml

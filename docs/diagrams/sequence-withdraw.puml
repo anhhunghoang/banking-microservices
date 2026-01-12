@@ -1,0 +1,26 @@
+@startuml
+actor Client
+participant "API Gateway" as GW
+participant "Transaction Service" as TS
+participant Kafka
+participant "Account Service" as AS
+
+Client -> GW : POST /transactions/withdraw
+GW -> TS : createWithdraw
+TS -> TS : save PENDING
+TS -> Kafka : WithdrawRequested
+
+Kafka -> AS : WithdrawRequested
+AS -> AS : check balance
+alt sufficient funds
+  AS -> AS : debit balance
+  AS -> Kafka : MoneyDebited
+else insufficient funds
+  AS -> Kafka : ReservationFailed
+end
+
+Kafka -> TS : event
+TS -> TS : update status
+TS -> Kafka : TransactionCompleted/Failed
+
+@enduml
