@@ -120,8 +120,11 @@ Infrastructure definitions.
 ```
 infra/
 ├── docker-compose.yml
+├── start.sh
 ├── kafka/
-│   └── topics.sh
+│   └── init-topics.sh
+├── postgres/
+│   └── init.sql
 ├── prometheus/
 └── grafana/
 ```
@@ -166,14 +169,23 @@ Architecture and decision documentation.
 
 ```
 docs/
-├── code-structure.md
-└── diagrams/
-    ├── sequence-create-customer.puml
-    ├── sequence-create-account.puml
-    ├── sequence-deposit.puml
-    ├── sequence-withdraw.puml
-    ├── sequence-transfer.puml
-    └── sequence-notification.puml
+├── instructions/
+│   ├── code-structure.md
+│   ├── infra.md
+│   ├── plan.md
+│   ├── rules.md
+│   └── setup-guide.md
+├── diagrams/
+│   ├── sequence-create-customer.puml
+│   ├── sequence-create-account.puml
+│   ├── sequence-deposit.puml
+│   ├── sequence-withdraw.puml
+│   ├── sequence-transfer.puml
+│   └── sequence-notification.puml
+└── adr/
+    ├── 0001-event-driven.md
+    ├── 0002-outbox-pattern.md
+    └── 0003-saga-choreography.md
 ```
 
 ---

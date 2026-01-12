@@ -257,3 +257,6 @@ $RECYCLE.BIN/
 
 # Cursor AI
 .cursor/
+
+# OpenTelemetry
+opentelemetry-javaagent.jar

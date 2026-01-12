@@ -1,0 +1,42 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.3.4' apply false
+    id 'io.spring.dependency-management' version '1.1.6' apply false
+}
+
+allprojects {
+    group = 'com.banking'
+    version = '0.0.1-SNAPSHOT'
+
+    repositories { 
+        mavenCentral() 
+    }
+
+    java {
+        toolchain { 
+            languageVersion = JavaLanguageVersion.of(21) 
+        }
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'org.springframework.boot'
+
+    dependencies {
+        implementation 'org.springframework.boot:spring-boot-starter'
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        compileOnly 'org.projectlombok:lombok'
+        annotationProcessor 'org.projectlombok:lombok'
+    }
+
+    test {
+        useJUnitPlatform()
+    }
+}
+
+project(':common-lib') {
+    bootJar.enabled = false
+    jar.enabled = true
+}

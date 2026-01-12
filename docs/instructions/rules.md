@@ -29,17 +29,25 @@
 - **Optional**: Use `Optional` for return types that might be empty. avoid `null` returns. Do not use `Optional` in field declarations or method parameters.
 - **Stream API**: Use Streams for collections processing where readability is enhanced, but prefer simple loops for performance-critical hot paths if necessary.
 - **Immutability**: Prefer `final` fields and immutable collections (`List.of()`, `Map.of()`).
+- **Date & Time**: 
+  - Use `java.time` API (LocalDateTime, ZonedDateTime, Instant).
+  - Always store and transmit dates in **UTC**.
+  - Use `DateUtil` from common-lib for consistency.
+  - `LocalDateTime` does not store time zone info, so assume it represents UTC in the database context, or use `Instant` / `ZonedDateTime` if explicit time zone is required. For global apps, `Instant` is often safer for point-in-time events.
 
 ## 3. Spring Boot & Microservices Best Practices
 
-- **Dependency Injection**: Always use **Constructor Injection**. Avoid `@Autowired` on fields.
+- **Dependency Injection**: Always use **Constructor Injection**. Avoid `@Autowired` on fields. Use Interfaces for injection when possible.
   ```java
   @Service
   @RequiredArgsConstructor // Lombok
-  public class AccountService {
+  public class AccountServiceImpl implements AccountService {
       private final AccountRepository accountRepository;
   }
   ```
+- **Service Interfaces**: All Service classes MUST implement an interface. Controllers and other components MUST depend on the interface, not the concrete implementation.
+  - Name implementation as `ClassNameImpl` (e.g., `AccountServiceImpl`).
+  - Name interface as `ClassName` (e.g., `AccountService`).
 - **Layered Architecture**:
   - `Controller`: Handle HTTP requests, validation, and serialization. Keep logic minimal.
   - `Service`: Business logic, transaction boundaries (`@Transactional`).
@@ -78,3 +86,58 @@
 - Follow Conventional Commits format: `<type>[optional scope]: <description>`
 - Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`.
 - Example: `feat(payment): add retry logic for failed transactions`
+
+## 7. Antigravity TDD Coding Rules
+
+This section defines the Test-Driven Development (TDD) workflow and coding rules for all Antigravity developers. The goal is to ensure high-quality, maintainable code and consistent practices across the team.
+
+### 7.1 Run Existing Tests
+
+- Before starting any new feature or code change, **run all existing tests**.  
+- Ensure the codebase is in a **green state**.  
+- Do not start writing new code if any existing test is failing.
+
+### 7.2 Write Tests for New Code (Red Phase)
+
+- **Write tests before writing any implementation.**
+- Test cases should cover all important behavior:
+  1. **Happy path** – at least 1 test case for normal input.
+  2. **Edge cases** – at least 1 test case for boundary conditions.
+  3. **Failure / invalid input cases** – at least 1 test case to check error handling.
+- Additional test cases are encouraged if the logic is complex.
+- **Goal:** Tests should **fail initially**, indicating the feature is not yet implemented.
+
+### 7.3 Implement Code to Pass Tests (Green Phase)
+
+- Write the **minimum code necessary** to make the tests pass.  
+- Ensure that **all existing and new tests pass**.  
+- If tests fail, **fix the code** until all tests pass.  
+
+### 7.4 Refactor Code (Refactor Phase)
+
+- Optimize, clean, and improve the code **without changing behavior**.  
+- Run all tests again to **verify nothing is broken**.  
+- Refactor for readability, maintainability, and performance.
+
+### 7.5 Review and Commit
+
+- Ensure all tests pass after refactoring.  
+- Optionally, request peer review before merging code.  
+- Commit code only if the branch is **green**.
+
+### 7.6 TDD Best Practices
+
+- **Red → Green → Refactor:** always follow this sequence.  
+- Tests are **mandatory before code implementation**.  
+- Cover at least **happy path, edge case, and failure scenarios**.  
+- Keep code **loose coupled, readable, and maintainable**.  
+- Never write code before creating tests.  
+
+#### Example Test Case Coverage
+
+| Type | Minimum Test Cases | Notes |
+|------|-----------------|-------|
+| Happy path | 1 | Normal inputs |
+| Edge case | 1 | Boundary conditions |
+| Failure / invalid | 1 | Exceptions or invalid inputs |
+| Additional | 0+ | Optional for complex logic |

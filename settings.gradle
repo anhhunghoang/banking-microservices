@@ -1,0 +1,7 @@
+rootProject.name = 'banking-microservices'
+include 'common-lib'
+include 'account-service'
+include 'transaction-service'
+include 'customer-service'
+include 'notification-service'
+include 'api-gateway'

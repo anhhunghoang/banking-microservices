@@ -19,6 +19,7 @@ This plan guides Cursor to generate the full mono-repo Banking Microservices sys
 - Docker Compose infra (KRaft Kafka + Redis + Postgres + Mongo + Jaeger for tracing)
 - Sequence diagrams (PlantUML), ADRs, and demo scripts
 - Observability: OpenTelemetry Java Agent (zero-code tracing) + Jaeger
+- API Documentation: OpenAPI 3 (Swagger UI) for external APIs
 
 **Note:** Current date context is January 2026 – Use Kafka 4.1.1+ in KRaft mode (ZooKeeper removed since 4.0).
 
@@ -41,9 +42,11 @@ banking-microservices/
 ├── notification-service/
 ├── api-gateway/
 ├── infra/                       # docker-compose.yml, otel-collector-config.yaml
-├── specs/
 ├── docs/
-│   └── diagrams/               # PlantUML sequence + C4
+│   ├── instructions/            # AI and developer guidelines
+│   ├── diagrams/               # PlantUML sequence + C4
+│   └── adr/                    # Architecture Decision Records
+├── specs/                       # Domain specifications
 ├── scripts/                     # demo scripts
 └── .cursor/
 ```
@@ -112,6 +115,8 @@ allprojects {
 9. **Documentation**: Documentation includes C4/sequence diagrams (PlantUML), ADRs, README
 
 10. **Observability**: Use OpenTelemetry Java Agent (auto-instrument HTTP/Kafka/JDBC) + Jaeger for tracing
+
+11. **API Documentation**: Use SpringDoc OpenAPI to expose Swagger UI at `/swagger-ui.html` and API docs at `/v3/api-docs`. Annotate Controllers with `@Operation` and `@ApiResponse`.
 
 ---
 
@@ -203,39 +208,11 @@ Cursor reads `specs/*.md` to generate:
 ---
 
 ## 5. Infrastructure Generation
-
-### 5.1 Docker Compose
-
-**infra/docker-compose.yml**: Postgres, Mongo, Redis, Kafka (KRaft single broker), Jaeger, OpenTelemetry Collector
-
-**Example Kafka KRaft (single combined mode):**
-```yaml
-kafka:
-  image: apache/kafka:4.1.1
-  container_name: kafka
-  ports:
-    - "9092:9092"
-  environment:
-    KAFKA_NODE_ID: 1
-    KAFKA_PROCESS_ROLES: broker,controller
-    KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-    KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-    KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
-    KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-    KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-    KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-    KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-    KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-    CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk  # random UUID
-  volumes:
-    - kafka_data:/tmp/kraft-combined-logs
-```
-
-### 5.2 OpenTelemetry
-
-Mount OpenTelemetry Java Agent jar + env vars for OTEL exporter to Jaeger/Collector
+- **Reference**: See [`docs/instructions/infra.md`](infra.md) for detailed configuration.
+- **Components**:
+  - Docker Compose (Postgres, Mongo, Redis, Kafka, Jaeger)
+  - Initialization Scripts (DB creation, Topic creation)
+  - Application code NOT responsible for infra creation.
 
 ---
 
@@ -250,8 +227,10 @@ Mount OpenTelemetry Java Agent jar + env vars for OTEL exporter to Jaeger/Collec
 
 - `docs/diagrams/` → PlantUML files (`sequence-create-account.puml`, `sequence-transfer.puml`, etc.)
 - `docs/adr/` → `0001-event-driven.md`, `0002-outbox.md`, `0003-saga-choreography.md`
-- `docs/code-structure.md`
+- `docs/instructions/code-structure.md`
+- `docs/instructions/setup-guide.md`
 - `README.md`: Setup (Java 21, Gradle), run (docker compose up), demo flows
+- OpenAPI UI: URLs for each service's Swagger UI
 
 ---
 
