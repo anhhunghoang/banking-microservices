@@ -3,17 +3,23 @@
 
 # Log files
 *.log
-logs/
 *.log.*
+logs/
+application.log
+server.log
+spring-boot-*.log
 
-# Package Files
+# Package Files / Archives
 *.jar
 *.war
 *.nar
 *.ear
 *.zip
+*.tar
 *.tar.gz
 *.rar
+*.7z
+*.tgz
 
 # Virtual machine crash logs
 hs_err_pid*
@@ -69,9 +75,6 @@ bin/
 /nbdist/
 /.nb-gradle/
 
-# Spring Boot
-spring-boot-*.log
-
 # Application specific
 application-local.properties
 application-local.yml
@@ -90,14 +93,14 @@ application-*.yml
 
 # Secrets and credentials
 secrets/
+**/secrets/**
+**/credentials/**
 *.key
 *.pem
 *.p12
 *.jks
 *.keystore
 *.truststore
-**/secrets/**
-**/credentials/**
 *.secret
 *.credential
 
@@ -126,22 +129,28 @@ docker-compose.*.local.yml
 kubeconfig*
 *-kubeconfig.yaml
 
-# Temporary files
-*.tmp
-*.temp
-*.swp
-*.swo
-*~
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-*.bak
-*.backup
-*.cache
+# Monitoring and observability
+prometheus/data/
+grafana/data/
+grafana/grafana.db
+jaeger/data/
+
+# Kafka
+kafka-logs/
+kafka-data/
+zookeeper-data/
+
+# Build outputs
+dist/
+
+# Generated sources
+generated/
+.generated/
+
+# Test output
+test-output/
+test-results/
+*.jfr
 
 # Test coverage
 .nyc_output/
@@ -163,7 +172,6 @@ yarn-error.log*
 .npm
 .eslintcache
 .node_repl_history
-*.tgz
 .yarn-integrity
 package-lock.json
 yarn.lock
@@ -180,64 +188,17 @@ ENV/
 env.bak/
 venv.bak/
 *.egg-info/
-dist/
-build/
 *.egg
 
-# OS files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-Desktop.ini
-
-# Monitoring and observability
-prometheus/data/
-grafana/data/
-grafana/grafana.db
-jaeger/data/
-
-# Kafka
-kafka-logs/
-kafka-data/
-zookeeper-data/
-
-# Local infrastructure
-*.local
-.local/
-infra/.env
-infra/.env.local
-
-# Build outputs
-out/
-dist/
-bin/
-target/
-
-# Generated sources
-generated/
-.generated/
-
-# Test output
-test-output/
-test-results/
-*.jfr
-
-# Application logs
-logs/
-*.log
-application.log
-server.log
-
-# Archive files
-*.zip
-*.tar
-*.tar.gz
-*.rar
-*.7z
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*.cache
+scratch/
+tmp/
+temp/
 
 # Backup files
 *.bak
@@ -245,16 +206,14 @@ server.log
 *.old
 *.orig
 
-# Scratch files
-scratch/
-tmp/
-temp/
-*.tmp
-
 # Local development
+*.local
+.local/
 local/
 .dev/
 development/
+infra/.env
+infra/.env.local
 
 # CI/CD (local)
 .github/workflows/*.local.yml
@@ -267,10 +226,15 @@ _site/
 docs/_build/
 docs/.doctrees/
 
-# Cursor AI (optional - uncomment if you want to ignore)
-# .cursor/
-
-# MacOS
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
 .AppleDouble
 .LSOverride
 Icon
@@ -279,8 +243,6 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
-
-# Windows
 $RECYCLE.BIN/
 *.cab
 *.msi
@@ -288,9 +250,6 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 *.lnk
-
-# Linux
-*~
 .fuse_hidden*
 .directory
 .Trash-*
