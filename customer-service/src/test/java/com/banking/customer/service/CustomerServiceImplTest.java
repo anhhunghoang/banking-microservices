@@ -5,8 +5,6 @@ import com.banking.customer.dto.CreateCustomerRequest;
 import com.banking.customer.dto.CustomerResponse;
 import com.banking.customer.model.Customer;
 import com.banking.customer.repository.CustomerRepository;
-import com.banking.common.event.CustomerCreated;
-import com.banking.customer.event.CustomerEventProducer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -31,9 +29,6 @@ class CustomerServiceImplTest {
 
     @InjectMocks
     private CustomerServiceImpl customerService;
-
-    @Mock
-    private CustomerEventProducer customerEventProducer;
 
     @Test
     void shouldCreateCustomer_WhenEmailIsUnique() {
@@ -62,7 +57,6 @@ class CustomerServiceImplTest {
 
         verify(customerRepository).existsByEmail(request.getEmail());
         verify(customerRepository).save(any(Customer.class));
-        verify(customerEventProducer).sendCustomerCreated(any(CustomerCreated.class));
     }
 
     @Test

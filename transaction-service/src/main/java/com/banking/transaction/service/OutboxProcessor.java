@@ -34,6 +34,8 @@ public class OutboxProcessor {
         for (OutboxEvent event : events) {
             try {
                 String topic = determineTopic(event.getEventType());
+                // The Aspect in common-lib will automatically catch this send,
+                // see the trace_id in the JSON, and restore the Jaeger chain!
                 kafkaTemplate.send(topic, event.getAggregateId().toString(), event.getPayload());
 
                 event.setStatus(OutboxEvent.OutboxStatus.PROCESSED);

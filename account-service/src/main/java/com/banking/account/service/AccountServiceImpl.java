@@ -6,6 +6,10 @@ import com.banking.account.event.AccountEventProducer;
 import com.banking.account.model.Account;
 import com.banking.account.repository.AccountRepository;
 import com.banking.common.event.AccountCreated;
+import com.banking.common.event.MoneyCredited;
+import com.banking.common.event.MoneyDebited;
+import com.banking.common.event.MoneyReserved;
+import com.banking.common.event.ReservationFailed;
 import com.banking.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +21,9 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class AccountServiceImpl implements AccountService {
+
+    private static final String INSUFFICIENT_FUNDS = "Insufficient funds";
+    private static final String ERROR_CODE_INSUFFICIENT_FUNDS = "INSUFFICIENT_FUNDS";
 
     private final AccountRepository accountRepository;
     private final AccountEventProducer eventProducer;
@@ -51,41 +58,82 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
-    public void deposit(UUID id, BigDecimal amount) {
-        Account account = getAccountEntity(id);
-        account.setBalance(account.getBalance().add(amount));
-        accountRepository.save(account);
+    public void deposit(UUID id, BigDecimal amount, UUID transactionId) {
+        processDeposit(id, amount, transactionId);
     }
 
     @Override
     @Transactional
-    public void withdraw(UUID id, BigDecimal amount) {
-        Account account = getAccountEntity(id);
-        if (account.getBalance().compareTo(amount) < 0) {
-            throw new BusinessException("Insufficient funds", "INSUFFICIENT_FUNDS");
-        }
-        account.setBalance(account.getBalance().subtract(amount));
-        accountRepository.save(account);
+    public void withdraw(UUID id, BigDecimal amount, UUID transactionId) {
+        processWithdraw(id, amount, transactionId);
     }
 
     @Override
     @Transactional
     public void reserveMoney(UUID id, BigDecimal amount, UUID transactionId) {
-        // Simple implementation: subtract from balance for now
-        // In a real outbox/saga, we might use a separate 'reserved_balance' field
-        withdraw(id, amount);
+        Account account = getAccountEntity(id);
+        if (account.getBalance().compareTo(amount) < 0) {
+            eventProducer.sendReservationFailed(ReservationFailed.builder()
+                    .accountId(id)
+                    .reason(INSUFFICIENT_FUNDS)
+                    .build(), transactionId);
+            throw new BusinessException(INSUFFICIENT_FUNDS, ERROR_CODE_INSUFFICIENT_FUNDS);
+        }
+        account.setBalance(account.getBalance().subtract(amount));
+        accountRepository.save(account);
+
+        eventProducer.sendMoneyReserved(MoneyReserved.builder()
+                .accountId(id)
+                .amount(amount)
+                .currency("USD")
+                .build(), transactionId);
     }
 
     @Override
     @Transactional
     public void debitMoney(UUID id, BigDecimal amount, UUID transactionId) {
-        withdraw(id, amount);
+        processWithdraw(id, amount, transactionId);
     }
 
     @Override
     @Transactional
     public void creditMoney(UUID id, BigDecimal amount, UUID transactionId) {
-        deposit(id, amount);
+        processDeposit(id, amount, transactionId);
+    }
+
+    private void processDeposit(UUID id, BigDecimal amount, UUID transactionId) {
+        Account account = getAccountEntity(id);
+        account.setBalance(account.getBalance().add(amount));
+        accountRepository.save(account);
+
+        eventProducer.sendMoneyCredited(MoneyCredited.builder()
+                .accountId(id)
+                .amount(amount)
+                .currency("USD")
+                .build(), transactionId);
+    }
+
+    private void processWithdraw(UUID id, BigDecimal amount, UUID transactionId) {
+        Account account = getAccountEntity(id);
+        if (account.getBalance().compareTo(amount) < 0) {
+            if (transactionId != null) {
+                eventProducer.sendReservationFailed(ReservationFailed.builder()
+                        .accountId(id)
+                        .reason(INSUFFICIENT_FUNDS)
+                        .build(), transactionId);
+            }
+            throw new BusinessException(INSUFFICIENT_FUNDS, ERROR_CODE_INSUFFICIENT_FUNDS);
+        }
+        account.setBalance(account.getBalance().subtract(amount));
+        accountRepository.save(account);
+
+        if (transactionId != null) {
+            eventProducer.sendMoneyDebited(MoneyDebited.builder()
+                    .accountId(id)
+                    .amount(amount)
+                    .currency("USD")
+                    .build(), transactionId);
+        }
     }
 
     private Account getAccountEntity(UUID id) {

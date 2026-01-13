@@ -2,6 +2,7 @@ package com.banking.transaction.controller;
 
 import com.banking.transaction.dto.TransactionRequest;
 import com.banking.transaction.dto.TransactionResponse;
+import com.banking.transaction.dto.TransferRequest;
 import com.banking.transaction.service.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,6 +34,13 @@ public class TransactionController {
     public ResponseEntity<TransactionResponse> createWithdrawal(@Valid @RequestBody TransactionRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(transactionService.createWithdrawal(request));
+    }
+
+    @PostMapping("/transfer")
+    @Operation(summary = "Create a transfer transaction")
+    public ResponseEntity<TransactionResponse> createTransfer(@Valid @RequestBody TransferRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(transactionService.createTransfer(request));
     }
 
     @GetMapping("/{id}")

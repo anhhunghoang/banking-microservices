@@ -12,11 +12,9 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TransactionResponse {
-    private UUID id;
-    private UUID accountId;
+public class TransferRequest {
+    private UUID fromAccountId;
+    private UUID toAccountId;
     private BigDecimal amount;
-    private String type;
-    private String status;
-    private String traceId;
+    private String currency;
 }

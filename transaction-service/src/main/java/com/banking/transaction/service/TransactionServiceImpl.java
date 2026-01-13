@@ -2,10 +2,13 @@ package com.banking.transaction.service;
 
 import com.banking.common.event.BaseEvent;
 import com.banking.common.event.DepositRequested;
+import com.banking.common.event.TransferRequested;
 import com.banking.common.event.WithdrawRequested;
 import com.banking.common.exception.BusinessException;
+import com.banking.common.tracing.TracingService;
 import com.banking.transaction.dto.TransactionRequest;
 import com.banking.transaction.dto.TransactionResponse;
+import com.banking.transaction.dto.TransferRequest;
 import com.banking.transaction.model.OutboxEvent;
 import com.banking.transaction.model.Transaction;
 import com.banking.transaction.repository.OutboxRepository;
@@ -25,101 +28,130 @@ import java.util.UUID;
 @Slf4j
 public class TransactionServiceImpl implements TransactionService {
 
-    private final TransactionRepository transactionRepository;
-    private final OutboxRepository outboxRepository;
-    private final ObjectMapper objectMapper;
+        private final TransactionRepository transactionRepository;
+        private final OutboxRepository outboxRepository;
+        private final ObjectMapper objectMapper;
+        private final TracingService tracingService;
 
-    @Override
-    @Transactional
-    public TransactionResponse createDeposit(TransactionRequest request) {
-        Transaction transaction = Transaction.builder()
-                .accountId(request.getAccountId())
-                .amount(request.getAmount())
-                .currency(request.getCurrency())
-                .type(Transaction.TransactionType.DEPOSIT)
-                .status(Transaction.TransactionStatus.PENDING)
-                .build();
+        @Override
+        @Transactional
+        public TransactionResponse createDeposit(TransactionRequest request) {
+                Transaction transaction = Transaction.builder()
+                                .accountId(request.getAccountId())
+                                .amount(request.getAmount())
+                                .currency(request.getCurrency())
+                                .type(Transaction.TransactionType.DEPOSIT)
+                                .status(Transaction.TransactionStatus.PENDING)
+                                .build();
 
-        Transaction savedTransaction = transactionRepository.save(transaction);
+                Transaction savedTransaction = transactionRepository.save(transaction);
 
-        saveOutboxEvent(savedTransaction, "DepositRequested",
-                DepositRequested.builder()
-                        .accountId(savedTransaction.getAccountId())
-                        .amount(savedTransaction.getAmount())
-                        .currency(savedTransaction.getCurrency())
-                        .build());
+                saveOutboxEvent(savedTransaction, "DepositRequested",
+                                DepositRequested.builder()
+                                                .accountId(savedTransaction.getAccountId())
+                                                .amount(savedTransaction.getAmount())
+                                                .currency(savedTransaction.getCurrency())
+                                                .build());
 
-        return mapToResponse(savedTransaction);
-    }
-
-    @Override
-    @Transactional
-    public TransactionResponse createWithdrawal(TransactionRequest request) {
-        Transaction transaction = Transaction.builder()
-                .accountId(request.getAccountId())
-                .amount(request.getAmount())
-                .currency(request.getCurrency())
-                .type(Transaction.TransactionType.WITHDRAWAL)
-                .status(Transaction.TransactionStatus.PENDING)
-                .build();
-
-        Transaction savedTransaction = transactionRepository.save(transaction);
-
-        saveOutboxEvent(savedTransaction, "WithdrawRequested",
-                WithdrawRequested.builder()
-                        .accountId(savedTransaction.getAccountId())
-                        .amount(savedTransaction.getAmount())
-                        .currency(savedTransaction.getCurrency())
-                        .build());
-
-        return mapToResponse(savedTransaction);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public TransactionResponse getTransaction(UUID id) {
-        return transactionRepository.findById(id)
-                .map(this::mapToResponse)
-                .orElseThrow(() -> new BusinessException("Transaction not found", "TRANSACTION_NOT_FOUND"));
-    }
-
-    private void saveOutboxEvent(Transaction transaction, String eventType, Object payload) {
-        try {
-            BaseEvent<?> event = BaseEvent.builder()
-                    .eventId(UUID.randomUUID())
-                    .eventType(eventType)
-                    .eventVersion(1)
-                    .aggregateType("Transaction")
-                    .aggregateId(transaction.getId())
-                    .transactionId(transaction.getId())
-                    .requestId(UUID.randomUUID()) // In real app, this comes from client
-                    .correlationId(UUID.randomUUID())
-                    .timestamp(LocalDateTime.now())
-                    .payload(payload)
-                    .build();
-
-            OutboxEvent outboxEvent = OutboxEvent.builder()
-                    .aggregateType("Transaction")
-                    .aggregateId(transaction.getId())
-                    .eventType(eventType)
-                    .payload(objectMapper.writeValueAsString(event))
-                    .status(OutboxEvent.OutboxStatus.PENDING)
-                    .build();
-
-            outboxRepository.save(outboxEvent);
-        } catch (JsonProcessingException e) {
-            log.error("Error serializing outbox event", e);
-            throw new RuntimeException("Error serializing outbox event", e);
+                return mapToResponse(savedTransaction);
         }
-    }
 
-    private TransactionResponse mapToResponse(Transaction transaction) {
-        return TransactionResponse.builder()
-                .id(transaction.getId())
-                .accountId(transaction.getAccountId())
-                .amount(transaction.getAmount())
-                .type(transaction.getType().name())
-                .status(transaction.getStatus().name())
-                .build();
-    }
+        @Override
+        @Transactional
+        public TransactionResponse createWithdrawal(TransactionRequest request) {
+                Transaction transaction = Transaction.builder()
+                                .accountId(request.getAccountId())
+                                .amount(request.getAmount())
+                                .currency(request.getCurrency())
+                                .type(Transaction.TransactionType.WITHDRAWAL)
+                                .status(Transaction.TransactionStatus.PENDING)
+                                .build();
+
+                Transaction savedTransaction = transactionRepository.save(transaction);
+
+                saveOutboxEvent(savedTransaction, "WithdrawRequested",
+                                WithdrawRequested.builder()
+                                                .accountId(savedTransaction.getAccountId())
+                                                .amount(savedTransaction.getAmount())
+                                                .currency(savedTransaction.getCurrency())
+                                                .build());
+
+                return mapToResponse(savedTransaction);
+        }
+
+        @Override
+        @Transactional
+        public TransactionResponse createTransfer(TransferRequest request) {
+                Transaction transaction = Transaction.builder()
+                                .fromAccountId(request.getFromAccountId())
+                                .toAccountId(request.getToAccountId())
+                                .amount(request.getAmount())
+                                .currency(request.getCurrency())
+                                .type(Transaction.TransactionType.TRANSFER)
+                                .status(Transaction.TransactionStatus.PENDING)
+                                .build();
+
+                Transaction savedTransaction = transactionRepository.save(transaction);
+
+                saveOutboxEvent(savedTransaction, "TransferRequested",
+                                TransferRequested.builder()
+                                                .fromAccountId(savedTransaction.getFromAccountId())
+                                                .toAccountId(savedTransaction.getToAccountId())
+                                                .amount(savedTransaction.getAmount())
+                                                .currency(savedTransaction.getCurrency())
+                                                .build());
+
+                return mapToResponse(savedTransaction);
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+        public TransactionResponse getTransaction(UUID id) {
+                return transactionRepository.findById(id)
+                                .map(this::mapToResponse)
+                                .orElseThrow(() -> new BusinessException("Transaction not found",
+                                                "TRANSACTION_NOT_FOUND"));
+        }
+
+        private void saveOutboxEvent(Transaction transaction, String eventType, Object payload) {
+                try {
+                        BaseEvent<?> event = BaseEvent.builder()
+                                        .eventId(UUID.randomUUID())
+                                        .eventType(eventType)
+                                        .eventVersion(1)
+                                        .aggregateType("Transaction")
+                                        .aggregateId(transaction.getId())
+                                        .transactionId(transaction.getId())
+                                        .requestId(UUID.randomUUID())
+                                        .correlationId(UUID.randomUUID())
+                                        .traceId(tracingService.getCurrentTraceId())
+                                        .timestamp(LocalDateTime.now())
+                                        .payload(payload)
+                                        .build();
+
+                        OutboxEvent outboxEvent = OutboxEvent.builder()
+                                        .aggregateType("Transaction")
+                                        .aggregateId(transaction.getId())
+                                        .eventType(eventType)
+                                        .payload(objectMapper.writeValueAsString(event))
+                                        .status(OutboxEvent.OutboxStatus.PENDING)
+                                        .build();
+
+                        outboxRepository.save(outboxEvent);
+                } catch (JsonProcessingException e) {
+                        log.error("Error serializing outbox event", e);
+                        throw new BusinessException("Error serializing outbox event", "SERIALIZATION_ERROR");
+                }
+        }
+
+        private TransactionResponse mapToResponse(Transaction transaction) {
+                return TransactionResponse.builder()
+                                .id(transaction.getId())
+                                .accountId(transaction.getAccountId())
+                                .amount(transaction.getAmount())
+                                .type(transaction.getType().name())
+                                .status(transaction.getStatus().name())
+                                .traceId(tracingService.getCurrentTraceId())
+                                .build();
+        }
 }

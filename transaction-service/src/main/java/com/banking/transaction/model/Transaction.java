@@ -26,8 +26,14 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Column(unique = true)
+    private UUID requestId;
+
     @Column(nullable = false)
-    private UUID accountId;
+    private UUID accountId; // For DEPOSIT/WITHDRAWAL
+
+    private UUID fromAccountId; // For TRANSFER
+    private UUID toAccountId; // For TRANSFER
 
     @Column(nullable = false)
     private BigDecimal amount;

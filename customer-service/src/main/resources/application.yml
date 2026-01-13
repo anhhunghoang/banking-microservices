@@ -2,7 +2,7 @@ spring:
   application:
     name: customer-service
   datasource:
-    url: jdbc:postgresql://localhost:5433/banking
+    url: jdbc:postgresql://localhost:5433/banking?currentSchema=customer
     username: user
     password: password
     driver-class-name: org.postgresql.Driver
@@ -19,6 +19,10 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    template:
+      observation-enabled: true
+    listener:
+      observation-enabled: true
 
 springdoc:
   api-docs:
@@ -28,3 +32,19 @@ springdoc:
 
 server:
   port: 8081
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%X{traceId}, %X{spanId}] %-5p %m%n"

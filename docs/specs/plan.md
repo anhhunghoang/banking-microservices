@@ -24,6 +24,28 @@ This plan guides Cursor to generate the full mono-repo Banking Microservices sys
 
 ---
 
+## 🏁 Current Status & Progress Tracking
+
+### Core Services
+- [x] **common-lib**: DTOs, events, exceptions implemented.
+- [x] **customer-service**: CRUD, JPA Auditing, Schema isolation implemented.
+- [x] **account-service**: CRUD, Event Listener, Saga response events implemented. 
+- [x] **transaction-service**: Deposit, Withdrawal, Transfer, Outbox Pattern, Saga coordination implemented.
+- [ ] **notification-service**: *Pending*
+- [ ] **api-gateway**: *Pending*
+
+### Infrastructure
+- [x] **Docker Compose**: Kafka (KRaft), Postgres, Jaeger, Adminer, Schema initializers.
+- [x] **Kafka Topics**: Auto-initialized via `init-topics.sh`.
+- [x] **Distributed Tracing**: OpenTelemetry integration (Customer-service: ✅, others: 🔄).
+
+### Recent Critical Fixes (Jan 13, 2026)
+- **Serialization Match**: Fixed double-serialization issue in `transaction-service` by changing Kafka `value-serializer` to `StringSerializer`.
+- **Balance Update Logic**: Enhanced `account-service` to correctly update balances AND emit response events (`MoneyCredited`, etc.) to complete the Saga flow.
+- **Robust Listener**: Improved `AccountEventListener` to handle payload mapping issues using `ObjectMapper`.
+
+---
+
 ## 1. Project Setup
 
 ### 1.1 Root Structure

@@ -2,7 +2,7 @@ package com.banking.account.service;
 
 import com.banking.account.dto.AccountResponse;
 import com.banking.account.dto.CreateAccountRequest;
-
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public interface AccountService {
@@ -10,11 +10,11 @@ public interface AccountService {
 
     AccountResponse getAccount(UUID id);
 
-    void deposit(UUID id, java.math.BigDecimal amount);
+    void deposit(UUID id, BigDecimal amount, UUID transactionId);
 
-    void withdraw(UUID id, java.math.BigDecimal amount);
+    void withdraw(UUID id, BigDecimal amount, UUID transactionId);
 
-    void reserveMoney(UUID id, java.math.BigDecimal amount, UUID transactionId);
+    void reserveMoney(UUID id, BigDecimal amount, UUID transactionId);
 
     void debitMoney(UUID id, java.math.BigDecimal amount, UUID transactionId);
 

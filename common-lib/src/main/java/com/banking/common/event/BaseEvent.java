@@ -40,6 +40,9 @@ public class BaseEvent<T> {
     @JsonProperty("correlation_id")
     private UUID correlationId;
 
+    @JsonProperty("trace_id")
+    private String traceId;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
     private LocalDateTime timestamp;
 
