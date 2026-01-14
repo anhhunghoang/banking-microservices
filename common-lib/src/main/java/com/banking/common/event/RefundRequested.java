@@ -1,5 +1,6 @@
 package com.banking.common.event;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RefundRequested {
+    @JsonProperty("account_id")
     private UUID accountId;
     private BigDecimal amount;
     private String currency;
