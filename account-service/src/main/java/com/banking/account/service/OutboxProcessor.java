@@ -1,6 +1,7 @@
 package com.banking.account.service;
 
 import com.banking.account.model.OutboxEvent;
+import com.banking.common.constant.Topics;
 import com.banking.account.repository.OutboxRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,7 @@ public class OutboxProcessor {
 
         for (OutboxEvent event : events) {
             try {
-                String topic = "accounts.events";
+                String topic = Topics.ACCOUNTS_EVENTS;
 
                 // The Kafka Interceptor in common-lib will automatically catch this send,
                 // see the trace_id in the JSON, and restore the Jaeger chain!

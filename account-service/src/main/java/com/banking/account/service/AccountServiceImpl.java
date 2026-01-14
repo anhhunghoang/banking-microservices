@@ -11,6 +11,7 @@ import com.banking.common.event.MoneyDebited;
 import com.banking.common.event.MoneyReserved;
 import com.banking.common.event.RefundCompleted;
 import com.banking.common.event.ReservationFailed;
+import com.banking.common.constant.ErrorCodes;
 import com.banking.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,9 +27,8 @@ import java.util.UUID;
 public class AccountServiceImpl implements AccountService {
 
     private static final String INSUFFICIENT_FUNDS = "Insufficient funds";
-    private static final String ERROR_CODE_INSUFFICIENT_FUNDS = "INSUFFICIENT_FUNDS";
     private static final String ACCOUNT_FROZEN = "Account is frozen";
-    private static final String ERROR_CODE_ACCOUNT_FROZEN = "ACCOUNT_FROZEN";
+    private static final String DEFAULT_CURRENCY = "USD";
 
     private final AccountRepository accountRepository;
     private final AccountEventProducer eventProducer;
@@ -58,7 +58,7 @@ public class AccountServiceImpl implements AccountService {
     public AccountResponse getAccount(UUID id) {
         return accountRepository.findById(id)
                 .map(this::mapToResponse)
-                .orElseThrow(() -> new BusinessException("Account not found", "ACCOUNT_NOT_FOUND"));
+                .orElseThrow(() -> new BusinessException("Account not found", ErrorCodes.ACCOUNT_NOT_FOUND));
     }
 
     @Override
@@ -86,7 +86,7 @@ public class AccountServiceImpl implements AccountService {
                     .accountId(id)
                     .reason(INSUFFICIENT_FUNDS)
                     .build(), transactionId);
-            throw new BusinessException(INSUFFICIENT_FUNDS, ERROR_CODE_INSUFFICIENT_FUNDS);
+            throw new BusinessException(INSUFFICIENT_FUNDS, ErrorCodes.INSUFFICIENT_FUNDS);
         }
 
         account.setBalance(account.getBalance().subtract(amount));
@@ -95,7 +95,7 @@ public class AccountServiceImpl implements AccountService {
         eventProducer.sendMoneyReserved(MoneyReserved.builder()
                 .accountId(id)
                 .amount(amount)
-                .currency("USD")
+                .currency(DEFAULT_CURRENCY)
                 .build(), transactionId);
     }
 
@@ -123,7 +123,7 @@ public class AccountServiceImpl implements AccountService {
         eventProducer.sendRefundCompleted(RefundCompleted.builder()
                 .accountId(id)
                 .amount(amount)
-                .currency("USD")
+                .currency(DEFAULT_CURRENCY)
                 .build(), transactionId);
 
         log.info("Successfully refunded {} to account: {}", amount, id);
@@ -140,7 +140,7 @@ public class AccountServiceImpl implements AccountService {
         eventProducer.sendMoneyCredited(MoneyCredited.builder()
                 .accountId(id)
                 .amount(amount)
-                .currency("USD")
+                .currency(DEFAULT_CURRENCY)
                 .build(), transactionId);
 
         log.info("Successfully deposited {} to account: {}", amount, id);
@@ -159,7 +159,7 @@ public class AccountServiceImpl implements AccountService {
                         .reason(INSUFFICIENT_FUNDS)
                         .build(), transactionId);
             }
-            throw new BusinessException(INSUFFICIENT_FUNDS, ERROR_CODE_INSUFFICIENT_FUNDS);
+            throw new BusinessException(INSUFFICIENT_FUNDS, ErrorCodes.INSUFFICIENT_FUNDS);
         }
 
         account.setBalance(account.getBalance().subtract(amount));
@@ -169,7 +169,7 @@ public class AccountServiceImpl implements AccountService {
             eventProducer.sendMoneyDebited(MoneyDebited.builder()
                     .accountId(id)
                     .amount(amount)
-                    .currency("USD")
+                    .currency(DEFAULT_CURRENCY)
                     .build(), transactionId);
         }
 
@@ -187,13 +187,13 @@ public class AccountServiceImpl implements AccountService {
                         .reason(ACCOUNT_FROZEN)
                         .build(), transactionId);
             }
-            throw new BusinessException(ACCOUNT_FROZEN, ERROR_CODE_ACCOUNT_FROZEN);
+            throw new BusinessException(ACCOUNT_FROZEN, ErrorCodes.ACCOUNT_FROZEN);
         }
     }
 
     private Account getAccountEntity(UUID id) {
         return accountRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("Account not found", "ACCOUNT_NOT_FOUND"));
+                .orElseThrow(() -> new BusinessException("Account not found", ErrorCodes.ACCOUNT_NOT_FOUND));
     }
 
     private AccountResponse mapToResponse(Account account) {

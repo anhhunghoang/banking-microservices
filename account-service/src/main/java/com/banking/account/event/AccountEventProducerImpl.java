@@ -2,6 +2,8 @@ package com.banking.account.event;
 
 import com.banking.account.model.OutboxEvent;
 import com.banking.account.repository.OutboxRepository;
+import com.banking.common.constant.AggregateTypes;
+import com.banking.common.constant.EventTypes;
 import com.banking.common.event.*;
 import com.banking.common.tracing.TracingService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -24,32 +26,32 @@ public class AccountEventProducerImpl implements AccountEventProducer {
 
     @Override
     public void sendAccountCreated(AccountCreated payload) {
-        saveEvent("AccountCreated", payload.getAccountId(), payload, null);
+        saveEvent(EventTypes.ACCOUNT_CREATED, payload.getAccountId(), payload, null);
     }
 
     @Override
     public void sendMoneyCredited(MoneyCredited payload, UUID transactionId) {
-        saveEvent("MoneyCredited", payload.getAccountId(), payload, transactionId);
+        saveEvent(EventTypes.MONEY_CREDITED, payload.getAccountId(), payload, transactionId);
     }
 
     @Override
     public void sendMoneyDebited(MoneyDebited payload, UUID transactionId) {
-        saveEvent("MoneyDebited", payload.getAccountId(), payload, transactionId);
+        saveEvent(EventTypes.MONEY_DEBITED, payload.getAccountId(), payload, transactionId);
     }
 
     @Override
     public void sendMoneyReserved(MoneyReserved payload, UUID transactionId) {
-        saveEvent("MoneyReserved", payload.getAccountId(), payload, transactionId);
+        saveEvent(EventTypes.MONEY_RESERVED, payload.getAccountId(), payload, transactionId);
     }
 
     @Override
     public void sendReservationFailed(ReservationFailed payload, UUID transactionId) {
-        saveEvent("ReservationFailed", payload.getAccountId(), payload, transactionId);
+        saveEvent(EventTypes.RESERVATION_FAILED, payload.getAccountId(), payload, transactionId);
     }
 
     @Override
     public void sendRefundCompleted(RefundCompleted payload, UUID transactionId) {
-        saveEvent("RefundCompleted", payload.getAccountId(), payload, transactionId);
+        saveEvent(EventTypes.REFUND_COMPLETED, payload.getAccountId(), payload, transactionId);
     }
 
     private void saveEvent(String eventType, UUID aggregateId, Object payload, UUID transactionId) {
@@ -58,7 +60,7 @@ public class AccountEventProducerImpl implements AccountEventProducer {
                     .eventId(UUID.randomUUID())
                     .eventType(eventType)
                     .eventVersion(1)
-                    .aggregateType("Account")
+                    .aggregateType(AggregateTypes.ACCOUNT)
                     .aggregateId(aggregateId)
                     .transactionId(transactionId)
                     .traceId(tracingService.getCurrentTraceId())
@@ -70,7 +72,7 @@ public class AccountEventProducerImpl implements AccountEventProducer {
             String payloadJson = objectMapper.writeValueAsString(event);
 
             OutboxEvent outboxEvent = OutboxEvent.builder()
-                    .aggregateType("Account")
+                    .aggregateType(AggregateTypes.ACCOUNT)
                     .aggregateId(aggregateId)
                     .eventType(eventType)
                     .payload(payloadJson)

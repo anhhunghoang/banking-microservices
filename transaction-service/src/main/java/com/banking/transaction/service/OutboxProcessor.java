@@ -1,6 +1,8 @@
 package com.banking.transaction.service;
 
 import com.banking.transaction.model.OutboxEvent;
+import com.banking.common.constant.EventTypes;
+import com.banking.common.constant.Topics;
 import com.banking.transaction.repository.OutboxRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,8 +55,10 @@ public class OutboxProcessor {
 
     private String determineTopic(String eventType) {
         return switch (eventType) {
-            case "DepositRequested", "WithdrawRequested", "TransferRequested" -> "transactions.commands";
-            case "TransactionCompleted", "TransactionFailed" -> "transactions.events";
+            case EventTypes.DEPOSIT_REQUESTED, EventTypes.WITHDRAW_REQUESTED, EventTypes.TRANSFER_REQUESTED ->
+                Topics.TRANSACTIONS_COMMANDS;
+            case EventTypes.TRANSACTION_COMPLETED, EventTypes.TRANSACTION_FAILED ->
+                Topics.TRANSACTIONS_EVENTS;
             default -> throw new IllegalArgumentException("Unknown event type: " + eventType);
         };
     }

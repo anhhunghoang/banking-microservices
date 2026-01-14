@@ -3,6 +3,9 @@ package com.banking.account.event;
 import com.banking.account.model.ProcessedEvent;
 import com.banking.account.repository.ProcessedEventRepository;
 import com.banking.account.service.AccountService;
+import com.banking.common.constant.EventTypes;
+import com.banking.common.constant.ServiceGroups;
+import com.banking.common.constant.Topics;
 import com.banking.common.event.BaseEvent;
 import com.banking.common.event.DepositRequested;
 import com.banking.common.event.RefundRequested;
@@ -27,7 +30,7 @@ public class AccountEventListener {
     private final ObjectMapper objectMapper;
     private final ProcessedEventRepository processedEventRepository;
 
-    @KafkaListener(topics = "transactions.commands", groupId = "account-service-group")
+    @KafkaListener(topics = Topics.TRANSACTIONS_COMMANDS, groupId = ServiceGroups.ACCOUNT_SERVICE_GROUP)
     @Transactional
     public void handleTransactionCommands(String message) {
         log.info("Received transaction command message: {}", message);
@@ -47,23 +50,23 @@ public class AccountEventListener {
                     event.getEventType(), event.getTransactionId());
 
             switch (event.getEventType()) {
-                case "DepositRequested" -> {
+                case EventTypes.DEPOSIT_REQUESTED -> {
                     String json = objectMapper.writeValueAsString(event.getPayload());
                     DepositRequested payload = objectMapper.readValue(json, DepositRequested.class);
                     accountService.deposit(payload.getAccountId(), payload.getAmount(), event.getTransactionId());
                 }
-                case "WithdrawRequested" -> {
+                case EventTypes.WITHDRAW_REQUESTED -> {
                     String json = objectMapper.writeValueAsString(event.getPayload());
                     WithdrawRequested payload = objectMapper.readValue(json, WithdrawRequested.class);
                     accountService.withdraw(payload.getAccountId(), payload.getAmount(), event.getTransactionId());
                 }
-                case "TransferRequested" -> {
+                case EventTypes.TRANSFER_REQUESTED -> {
                     String json = objectMapper.writeValueAsString(event.getPayload());
                     TransferRequested payload = objectMapper.readValue(json, TransferRequested.class);
                     accountService.reserveMoney(payload.getFromAccountId(), payload.getAmount(),
                             event.getTransactionId());
                 }
-                case "RefundRequested" -> {
+                case EventTypes.REFUND_REQUESTED -> {
                     String json = objectMapper.writeValueAsString(event.getPayload());
                     RefundRequested payload = objectMapper.readValue(json, RefundRequested.class);
                     accountService.refund(payload.getAccountId(), payload.getAmount(), event.getTransactionId());

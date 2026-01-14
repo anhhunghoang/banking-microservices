@@ -4,6 +4,8 @@ import com.banking.common.event.BaseEvent;
 import com.banking.common.event.DepositRequested;
 import com.banking.common.event.TransferRequested;
 import com.banking.common.event.WithdrawRequested;
+import com.banking.common.constant.AggregateTypes;
+import com.banking.common.constant.EventTypes;
 import com.banking.common.exception.BusinessException;
 import com.banking.common.tracing.TracingService;
 import com.banking.transaction.dto.TransactionRequest;
@@ -46,7 +48,7 @@ public class TransactionServiceImpl implements TransactionService {
 
                 Transaction savedTransaction = transactionRepository.save(transaction);
 
-                saveOutboxEvent(savedTransaction, "DepositRequested",
+                saveOutboxEvent(savedTransaction, EventTypes.DEPOSIT_REQUESTED,
                                 DepositRequested.builder()
                                                 .accountId(savedTransaction.getAccountId())
                                                 .amount(savedTransaction.getAmount())
@@ -69,7 +71,7 @@ public class TransactionServiceImpl implements TransactionService {
 
                 Transaction savedTransaction = transactionRepository.save(transaction);
 
-                saveOutboxEvent(savedTransaction, "WithdrawRequested",
+                saveOutboxEvent(savedTransaction, EventTypes.WITHDRAW_REQUESTED,
                                 WithdrawRequested.builder()
                                                 .accountId(savedTransaction.getAccountId())
                                                 .amount(savedTransaction.getAmount())
@@ -93,7 +95,7 @@ public class TransactionServiceImpl implements TransactionService {
 
                 Transaction savedTransaction = transactionRepository.save(transaction);
 
-                saveOutboxEvent(savedTransaction, "TransferRequested",
+                saveOutboxEvent(savedTransaction, EventTypes.TRANSFER_REQUESTED,
                                 TransferRequested.builder()
                                                 .fromAccountId(savedTransaction.getFromAccountId())
                                                 .toAccountId(savedTransaction.getToAccountId())
@@ -119,7 +121,7 @@ public class TransactionServiceImpl implements TransactionService {
                                         .eventId(UUID.randomUUID())
                                         .eventType(eventType)
                                         .eventVersion(1)
-                                        .aggregateType("Transaction")
+                                        .aggregateType(AggregateTypes.TRANSACTION)
                                         .aggregateId(transaction.getId())
                                         .transactionId(transaction.getId())
                                         .requestId(UUID.randomUUID())
@@ -130,7 +132,7 @@ public class TransactionServiceImpl implements TransactionService {
                                         .build();
 
                         OutboxEvent outboxEvent = OutboxEvent.builder()
-                                        .aggregateType("Transaction")
+                                        .aggregateType(AggregateTypes.TRANSACTION)
                                         .aggregateId(transaction.getId())
                                         .eventType(eventType)
                                         .payload(objectMapper.writeValueAsString(event))

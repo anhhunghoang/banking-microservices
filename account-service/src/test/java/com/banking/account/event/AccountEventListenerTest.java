@@ -2,6 +2,7 @@ package com.banking.account.event;
 
 import com.banking.account.repository.ProcessedEventRepository;
 import com.banking.account.service.AccountService;
+import com.banking.common.constant.EventTypes;
 import com.banking.common.event.BaseEvent;
 import com.banking.common.event.DepositRequested;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,7 +56,7 @@ class AccountEventListenerTest {
 
         BaseEvent<Object> event = BaseEvent.builder()
                 .eventId(eventId)
-                .eventType("DepositRequested")
+                .eventType(EventTypes.DEPOSIT_REQUESTED)
                 .transactionId(transactionId)
                 .payload(payload)
                 .build();

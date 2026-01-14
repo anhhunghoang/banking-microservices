@@ -1,5 +1,8 @@
 package com.banking.transaction.event;
 
+import com.banking.common.constant.EventTypes;
+import com.banking.common.constant.ServiceGroups;
+import com.banking.common.constant.Topics;
 import com.banking.common.event.BaseEvent;
 import com.banking.transaction.model.Transaction;
 import com.banking.transaction.repository.TransactionRepository;
@@ -21,7 +24,7 @@ public class TransactionEventListener {
     private final TransactionRepository transactionRepository;
     private final ObjectMapper objectMapper;
 
-    @KafkaListener(topics = "accounts.events", groupId = "transaction-service-group")
+    @KafkaListener(topics = Topics.ACCOUNTS_EVENTS, groupId = ServiceGroups.TRANSACTION_SERVICE_GROUP)
     @Transactional
     public void handleAccountEvents(String message) {
         log.info("Received account event message: {}", message);
@@ -35,10 +38,11 @@ public class TransactionEventListener {
                     event.getEventType(), event.getTransactionId());
 
             switch (event.getEventType()) {
-                case "MoneyReserved" -> handleMoneyReserved(event);
-                case "MoneyCredited" -> handleMoneyCredited(event);
-                case "MoneyDebited" -> handleMoneyDebited(event);
-                case "ReservationFailed" -> handleReservationFailed(event);
+                case EventTypes.MONEY_RESERVED -> handleMoneyReserved(event);
+                case EventTypes.MONEY_CREDITED -> handleMoneyCredited(event);
+                case EventTypes.MONEY_DEBITED -> handleMoneyDebited(event);
+                case EventTypes.RESERVATION_FAILED -> handleReservationFailed(event);
+                case EventTypes.REFUND_COMPLETED -> handleRefundCompleted(event);
                 default -> log.warn("Unknown event type: {}", event.getEventType());
             }
         } catch (Exception e) {
@@ -68,6 +72,13 @@ public class TransactionEventListener {
     private void handleReservationFailed(BaseEvent<?> event) {
         UUID transactionId = event.getTransactionId();
         log.error("Reservation failed for transaction: {}", transactionId);
+
+        updateTransactionStatus(transactionId, Transaction.TransactionStatus.FAILED);
+    }
+
+    private void handleRefundCompleted(BaseEvent<?> event) {
+        UUID transactionId = event.getTransactionId();
+        log.info("Refund completed for transaction: {}", transactionId);
 
         updateTransactionStatus(transactionId, Transaction.TransactionStatus.FAILED);
     }
