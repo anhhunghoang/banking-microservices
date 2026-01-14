@@ -1,14 +1,13 @@
 package com.banking.account.event;
 
-import com.banking.common.event.AccountCreated;
-import com.banking.common.event.BaseEvent;
-import com.banking.common.event.MoneyCredited;
-import com.banking.common.event.MoneyDebited;
-import com.banking.common.event.MoneyReserved;
-import com.banking.common.event.ReservationFailed;
+import com.banking.account.model.OutboxEvent;
+import com.banking.account.repository.OutboxRepository;
+import com.banking.common.event.*;
+import com.banking.common.tracing.TracingService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -19,48 +18,70 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AccountEventProducerImpl implements AccountEventProducer {
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
-    private static final String TOPIC = "accounts.events";
+    private final OutboxRepository outboxRepository;
+    private final ObjectMapper objectMapper;
+    private final TracingService tracingService;
 
     @Override
     public void sendAccountCreated(AccountCreated payload) {
-        sendEvent("AccountCreated", payload.getAccountId(), payload, null);
+        saveEvent("AccountCreated", payload.getAccountId(), payload, null);
     }
 
     @Override
     public void sendMoneyCredited(MoneyCredited payload, UUID transactionId) {
-        sendEvent("MoneyCredited", payload.getAccountId(), payload, transactionId);
+        saveEvent("MoneyCredited", payload.getAccountId(), payload, transactionId);
     }
 
     @Override
     public void sendMoneyDebited(MoneyDebited payload, UUID transactionId) {
-        sendEvent("MoneyDebited", payload.getAccountId(), payload, transactionId);
+        saveEvent("MoneyDebited", payload.getAccountId(), payload, transactionId);
     }
 
     @Override
     public void sendMoneyReserved(MoneyReserved payload, UUID transactionId) {
-        sendEvent("MoneyReserved", payload.getAccountId(), payload, transactionId);
+        saveEvent("MoneyReserved", payload.getAccountId(), payload, transactionId);
     }
 
     @Override
     public void sendReservationFailed(ReservationFailed payload, UUID transactionId) {
-        sendEvent("ReservationFailed", payload.getAccountId(), payload, transactionId);
+        saveEvent("ReservationFailed", payload.getAccountId(), payload, transactionId);
     }
 
-    private void sendEvent(String eventType, UUID aggregateId, Object payload, UUID transactionId) {
-        BaseEvent<Object> event = BaseEvent.<Object>builder()
-                .eventId(UUID.randomUUID())
-                .eventType(eventType)
-                .eventVersion(1)
-                .aggregateType("Account")
-                .aggregateId(aggregateId)
-                .transactionId(transactionId)
-                .payload(payload)
-                .timestamp(LocalDateTime.now())
-                .correlationId(UUID.randomUUID())
-                .build();
+    @Override
+    public void sendRefundCompleted(RefundCompleted payload, UUID transactionId) {
+        saveEvent("RefundCompleted", payload.getAccountId(), payload, transactionId);
+    }
 
-        kafkaTemplate.send(TOPIC, aggregateId.toString(), event);
-        log.info("Sent {} event for account: {}", eventType, aggregateId);
+    private void saveEvent(String eventType, UUID aggregateId, Object payload, UUID transactionId) {
+        try {
+            BaseEvent<Object> event = BaseEvent.<Object>builder()
+                    .eventId(UUID.randomUUID())
+                    .eventType(eventType)
+                    .eventVersion(1)
+                    .aggregateType("Account")
+                    .aggregateId(aggregateId)
+                    .transactionId(transactionId)
+                    .traceId(tracingService.getCurrentTraceId())
+                    .payload(payload)
+                    .timestamp(LocalDateTime.now())
+                    .correlationId(UUID.randomUUID())
+                    .build();
+
+            String payloadJson = objectMapper.writeValueAsString(event);
+
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .aggregateType("Account")
+                    .aggregateId(aggregateId)
+                    .eventType(eventType)
+                    .payload(payloadJson)
+                    .status(OutboxEvent.OutboxStatus.PENDING)
+                    .build();
+
+            outboxRepository.save(outboxEvent);
+            log.info("Saved {} event to outbox for account: {}", eventType, aggregateId);
+        } catch (JsonProcessingException e) {
+            log.error("Error serializing outbox event for account: {}", aggregateId, e);
+            throw new RuntimeException("Error serializing outbox event", e);
+        }
     }
 }

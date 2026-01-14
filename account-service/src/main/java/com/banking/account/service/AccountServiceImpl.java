@@ -9,9 +9,11 @@ import com.banking.common.event.AccountCreated;
 import com.banking.common.event.MoneyCredited;
 import com.banking.common.event.MoneyDebited;
 import com.banking.common.event.MoneyReserved;
+import com.banking.common.event.RefundCompleted;
 import com.banking.common.event.ReservationFailed;
 import com.banking.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,10 +22,13 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AccountServiceImpl implements AccountService {
 
     private static final String INSUFFICIENT_FUNDS = "Insufficient funds";
     private static final String ERROR_CODE_INSUFFICIENT_FUNDS = "INSUFFICIENT_FUNDS";
+    private static final String ACCOUNT_FROZEN = "Account is frozen";
+    private static final String ERROR_CODE_ACCOUNT_FROZEN = "ACCOUNT_FROZEN";
 
     private final AccountRepository accountRepository;
     private final AccountEventProducer eventProducer;
@@ -72,13 +77,18 @@ public class AccountServiceImpl implements AccountService {
     @Transactional
     public void reserveMoney(UUID id, BigDecimal amount, UUID transactionId) {
         Account account = getAccountEntity(id);
+
+        checkAccountStatus(account, transactionId);
+
         if (account.getBalance().compareTo(amount) < 0) {
+            log.warn("Insufficient funds for account: {} in transaction: {}", id, transactionId);
             eventProducer.sendReservationFailed(ReservationFailed.builder()
                     .accountId(id)
                     .reason(INSUFFICIENT_FUNDS)
                     .build(), transactionId);
             throw new BusinessException(INSUFFICIENT_FUNDS, ERROR_CODE_INSUFFICIENT_FUNDS);
         }
+
         account.setBalance(account.getBalance().subtract(amount));
         accountRepository.save(account);
 
@@ -101,8 +111,29 @@ public class AccountServiceImpl implements AccountService {
         processDeposit(id, amount, transactionId);
     }
 
+    @Override
+    @Transactional
+    public void refund(UUID id, BigDecimal amount, UUID transactionId) {
+        Account account = getAccountEntity(id);
+        checkAccountStatus(account, transactionId);
+
+        account.setBalance(account.getBalance().add(amount));
+        accountRepository.save(account);
+
+        eventProducer.sendRefundCompleted(RefundCompleted.builder()
+                .accountId(id)
+                .amount(amount)
+                .currency("USD")
+                .build(), transactionId);
+
+        log.info("Successfully refunded {} to account: {}", amount, id);
+    }
+
     private void processDeposit(UUID id, BigDecimal amount, UUID transactionId) {
         Account account = getAccountEntity(id);
+
+        checkAccountStatus(account, transactionId);
+
         account.setBalance(account.getBalance().add(amount));
         accountRepository.save(account);
 
@@ -111,11 +142,17 @@ public class AccountServiceImpl implements AccountService {
                 .amount(amount)
                 .currency("USD")
                 .build(), transactionId);
+
+        log.info("Successfully deposited {} to account: {}", amount, id);
     }
 
     private void processWithdraw(UUID id, BigDecimal amount, UUID transactionId) {
         Account account = getAccountEntity(id);
+
+        checkAccountStatus(account, transactionId);
+
         if (account.getBalance().compareTo(amount) < 0) {
+            log.warn("Insufficient funds for account: {} in transaction: {}", id, transactionId);
             if (transactionId != null) {
                 eventProducer.sendReservationFailed(ReservationFailed.builder()
                         .accountId(id)
@@ -124,6 +161,7 @@ public class AccountServiceImpl implements AccountService {
             }
             throw new BusinessException(INSUFFICIENT_FUNDS, ERROR_CODE_INSUFFICIENT_FUNDS);
         }
+
         account.setBalance(account.getBalance().subtract(amount));
         accountRepository.save(account);
 
@@ -133,6 +171,23 @@ public class AccountServiceImpl implements AccountService {
                     .amount(amount)
                     .currency("USD")
                     .build(), transactionId);
+        }
+
+        log.info("Successfully withdrew {} from account: {}", amount, id);
+    }
+
+    private void checkAccountStatus(Account account, UUID transactionId) {
+        if (account.getStatus() == Account.AccountStatus.FROZEN) {
+            log.error("Attempted operation on frozen account: {} in transaction: {}", account.getId(), transactionId);
+            // Even if frozen, we might want to emit a failure event if this is part of a
+            // transaction
+            if (transactionId != null) {
+                eventProducer.sendReservationFailed(ReservationFailed.builder()
+                        .accountId(account.getId())
+                        .reason(ACCOUNT_FROZEN)
+                        .build(), transactionId);
+            }
+            throw new BusinessException(ACCOUNT_FROZEN, ERROR_CODE_ACCOUNT_FROZEN);
         }
     }
 

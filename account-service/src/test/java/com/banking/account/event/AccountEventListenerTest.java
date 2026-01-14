@@ -1,5 +1,6 @@
 package com.banking.account.event;
 
+import com.banking.account.repository.ProcessedEventRepository;
 import com.banking.account.service.AccountService;
 import com.banking.common.event.BaseEvent;
 import com.banking.common.event.DepositRequested;
@@ -14,13 +15,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AccountEventListenerTest {
 
     @Mock
     private AccountService accountService;
+
+    @Mock
+    private ProcessedEventRepository processedEventRepository;
 
     private ObjectMapper objectMapper;
 
@@ -30,7 +36,7 @@ class AccountEventListenerTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
-        accountEventListener = new AccountEventListener(accountService, objectMapper);
+        accountEventListener = new AccountEventListener(accountService, objectMapper, processedEventRepository);
     }
 
     @Test
@@ -39,6 +45,7 @@ class AccountEventListenerTest {
         UUID accountId = UUID.randomUUID();
         BigDecimal amount = BigDecimal.valueOf(50.00);
         UUID transactionId = UUID.randomUUID();
+        UUID eventId = UUID.randomUUID();
 
         DepositRequested payload = DepositRequested.builder()
                 .accountId(accountId)
@@ -47,6 +54,7 @@ class AccountEventListenerTest {
                 .build();
 
         BaseEvent<Object> event = BaseEvent.builder()
+                .eventId(eventId)
                 .eventType("DepositRequested")
                 .transactionId(transactionId)
                 .payload(payload)
@@ -54,10 +62,13 @@ class AccountEventListenerTest {
 
         String message = objectMapper.writeValueAsString(event);
 
+        when(processedEventRepository.existsById(eventId)).thenReturn(false);
+
         // Act
         accountEventListener.handleTransactionCommands(message);
 
         // Assert
         verify(accountService).deposit(accountId, amount, transactionId);
+        verify(processedEventRepository).save(any());
     }
 }

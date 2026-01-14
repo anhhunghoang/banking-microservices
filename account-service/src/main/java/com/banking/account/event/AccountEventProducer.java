@@ -17,4 +17,6 @@ public interface AccountEventProducer {
     void sendMoneyReserved(MoneyReserved event, UUID transactionId);
 
     void sendReservationFailed(ReservationFailed event, UUID transactionId);
+
+    void sendRefundCompleted(com.banking.common.event.RefundCompleted event, UUID transactionId);
 }

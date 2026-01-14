@@ -19,4 +19,6 @@ public interface AccountService {
     void debitMoney(UUID id, java.math.BigDecimal amount, UUID transactionId);
 
     void creditMoney(UUID id, java.math.BigDecimal amount, UUID transactionId);
+
+    void refund(UUID id, java.math.BigDecimal amount, UUID transactionId);
 }
