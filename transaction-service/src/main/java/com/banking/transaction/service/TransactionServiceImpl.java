@@ -6,6 +6,7 @@ import com.banking.common.event.TransferRequested;
 import com.banking.common.event.WithdrawRequested;
 import com.banking.common.constant.AggregateTypes;
 import com.banking.common.constant.EventTypes;
+import com.banking.common.constant.ErrorCodes;
 import com.banking.common.exception.BusinessException;
 import com.banking.common.tracing.TracingService;
 import com.banking.transaction.dto.TransactionRequest;
@@ -142,7 +143,7 @@ public class TransactionServiceImpl implements TransactionService {
                         outboxRepository.save(outboxEvent);
                 } catch (JsonProcessingException e) {
                         log.error("Error serializing outbox event", e);
-                        throw new BusinessException("Error serializing outbox event", "SERIALIZATION_ERROR");
+                        throw new BusinessException("Error serializing outbox event", ErrorCodes.SERIALIZATION_ERROR);
                 }
         }
 

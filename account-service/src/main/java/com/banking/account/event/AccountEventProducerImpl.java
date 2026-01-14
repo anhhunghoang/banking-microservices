@@ -6,6 +6,8 @@ import com.banking.common.constant.AggregateTypes;
 import com.banking.common.constant.EventTypes;
 import com.banking.common.event.*;
 import com.banking.common.tracing.TracingService;
+import com.banking.common.constant.ErrorCodes;
+import com.banking.common.exception.BusinessException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -83,7 +85,7 @@ public class AccountEventProducerImpl implements AccountEventProducer {
             log.info("Saved {} event to outbox for account: {}", eventType, aggregateId);
         } catch (JsonProcessingException e) {
             log.error("Error serializing outbox event for account: {}", aggregateId, e);
-            throw new RuntimeException("Error serializing outbox event", e);
+            throw new BusinessException("Error serializing outbox event", ErrorCodes.SERIALIZATION_ERROR);
         }
     }
 }

@@ -1,6 +1,8 @@
 package com.banking.common.constant;
 
 public class EventTypes {
+    private EventTypes() {}
+
     // Transaction Commands
     public static final String DEPOSIT_REQUESTED = "DepositRequested";
     public static final String WITHDRAW_REQUESTED = "WithdrawRequested";
