@@ -1,38 +1,59 @@
-# Banking Microservices Demo System
+# 🏦 Banking Microservices Demo
 
-A cloud-native, event-driven banking microservices demonstration using Java 21, Spring Boot, and Kafka.
+A production-grade, event-driven banking demonstration built with **Java 21**, **Spring Boot 3**, and **Apache Kafka**. This project showcases the **Outbox Pattern**, **Saga Choreography**, and **Distributed Tracing**.
 
-## Quick Start (Infrastructure)
+---
 
-Ensure Docker is running, then start the infrastructure:
+## 🚀 Quick Start
 
-```bash
-./infra/start.sh
-```
+1.  **Start Infrastructure**: Ensure Docker is running.
+    ```bash
+    ./infra/start.sh
+    ```
+2.  **Run Services**: Launch the microservices (Customer, Account, Transaction).
+    ```bash
+    ./gradlew :[service-name]:bootRun
+    ```
 
-## Documentation
+---
 
-All project documentation is located in the `docs/` folder:
+### 📖 Essential Documentation
 
-- **[Setup Guide](docs/instructions/setup-guide.md)**: Detailed instructions on how to run the services.
-- **[Architecture Plan](docs/instructions/plan.md)**: The overall technical design and roadmap.
-- **[Code Structure](docs/instructions/code-structure.md)**: Explanation of the project layout.
-- **[Java Coding Rules](docs/instructions/rules.md)**: Standards and TDD practices.
-- **[Infrastructure Details](docs/instructions/infra.md)**: Deep dive into the Docker and Kafka setup.
+To make the project easier to navigate, we have consolidated our guides:
 
-## Services Overview
+#### 🌟 [System Overview](docs/SYSTEM_OVERVIEW.md)
+*The "Story" of the system—What it does and how a transaction flows.*
 
-- **Customer Service**: Profile management and registration.
-- **Account Service**: Balance management and ledger.
-- **Transaction Service**: Processing deposits/withdrawals with Transactional Outbox.
-- **Notification Service**: Simulated alerts and emails.
-- **API Gateway**: Unified entry point for external traffic.
+#### 📐 [Architecture & Specifications](docs/ARCHITECTURE.md)
+*Core logic, Business Rules, and Technical Standards.*
+- Saga Choreography & Compensation.
+- Resiliency (Retries & DLQ).
+- Idempotency & Exactly-Once Processing.
+- Centralized Constants & Serialization Standards.
 
-## Tech Stack
+### 🛠️ [Development & Setup Guide](docs/DEVELOPMENT_GUIDE.md)
+*How to build, run, and debug the system.*
+- Infrastructure Setup details.
+- Distributed Tracing with Jaeger.
+- API Testing & Swagger.
+- **Bug History & Prevention Checklist**.
 
-- **Java 21** & **Spring Boot 3.3.4**
-- **Apache Kafka 4.1.1 (KRaft Mode)**
-- **PostgreSQL 16** (Transactional Store)
-- **MongoDB 7.0** (Audit Logs)
-- **Redis 7** (Idempotency & Caching)
-- **Jaeger / OpenTelemetry** (Distributed Tracing)
+---
+
+## 🏗️ Services Overview
+
+| Service | Port | Responsibility |
+| :--- | :--- | :--- |
+| **Customer Service** | `8081` | Manages customer profiles and registration. |
+| **Account Service** | `8082` | Manages balances, versions, and business rules. |
+| **Transaction Service** | `8083` | Orchestrates sagas and persists transaction states. |
+| **API Gateway** | `8080` | Unified entry point and rate limiting. |
+
+---
+
+## 🛠️ Tech Stack
+- **Languages**: Java 21
+- **Messaging**: Kafka (KRaft mode)
+- **Databases**: PostgreSQL (Relational), MongoDB (Audit), Redis (Idempotency)
+- **Observability**: OpenTelemetry, Jaeger, Micrometer Tracing
+- **Patterns**: Transactional Outbox, Saga, Idempotent Consumer

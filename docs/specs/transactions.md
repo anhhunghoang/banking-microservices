@@ -1,88 +1,39 @@
 # Transaction Service Specification
 
 ## Responsibility
-Coordinates money-related operations using Saga choreography.
+Orchestrates multi-service sagas (Deposit, Withdrawal, Transfer) and manages the Transactional Outbox.
 
 ## API
-
 ### POST /transactions/deposit
 ### POST /transactions/withdraw
 ### POST /transactions/transfer
 
-All requests require:
-- request_id (UUID)
-- amount
-- account references
+## Saga State Machine
+- **PENDING**: Transaction created, outbox event saved.
+- **COMPLETED**: Received success event from Account Service.
+- **FAILED**: Received failure event or compensation succeeded.
 
 ---
 
-## Data Model
-
-Transaction:
-- id
-- request_id
-- type (DEPOSIT, WITHDRAW, TRANSFER)
-- from_account
-- to_account
-- amount
-- status (PENDING, COMPLETED, FAILED)
-- created_at
+## Transactional Outbox Pattern
+1. Business logic updates `transactions` table.
+2. `OutboxEvent` is saved in the **same DB transaction**.
+3. `OutboxProcessor` polls `PENDING` events every 5s and publishes to Kafka.
+4. On Kafka ACK, event status is marked `PROCESSED`.
 
 ---
 
-## Events
+## Messaging
+### Outbound (Commands)
+- Topic: `transactions.commands`
+- Events: `DEPOSIT_REQUESTED`, `WITHDRAW_REQUESTED`, `TRANSFER_REQUESTED`, `REFUND_REQUESTED`.
 
-Outbound:
-- DepositRequested
-- WithdrawRequested
-- TransferRequested
-- RefundRequested
-- TransactionCompleted
-- TransactionFailed
-
-Inbound:
-- MoneyReserved
-- MoneyCredited
-- MoneyDebited
-- ReservationFailed
-- RefundCompleted
+### Inbound (Events)
+- Topic: `accounts.events`
+- Listens for: `MONEY_RESERVED`, `MONEY_CREDITED`, `MONEY_DEBITED`, `RESERVATION_FAILED`, `REFUND_COMPLETED`.
 
 ---
 
-## Saga Flows
-
-### Transfer
-
-1. Emit TransferRequested
-2. Wait MoneyReserved
-3. Emit Credit command
-4. Wait MoneyCredited
-5. Mark COMPLETED
-
-Failure:
-- If reservation fails → FAILED
-- If credit fails → RefundRequested
-
----
-
-## Business Rules
-
-- request_id ensures idempotency.
-- Saga state must be persisted.
-- Only one saga may process a transaction.
-
----
-
-## Failure Handling
-
-| Scenario | Handling |
-|----------|-----------|
-Timeout | Mark FAILED |
-Partial success | Compensate |
-
----
-
-## Non-Functional
-
-- Must recover from crashes via replay.
-- Must be idempotent on event consumption.
+## Error Handling
+- Processes DLT messages via `TransactionDltListener`.
+- Automatically moves failed processing to `accounts.events.DLT` after 3 retries.
