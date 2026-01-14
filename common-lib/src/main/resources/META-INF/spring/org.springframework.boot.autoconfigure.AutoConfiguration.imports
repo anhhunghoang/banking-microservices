@@ -1,1 +1,2 @@
 com.banking.common.config.SharedTracingAutoConfiguration
+com.banking.common.config.SharedKafkaAutoConfiguration

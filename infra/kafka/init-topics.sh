@@ -24,9 +24,13 @@ wait_for_kafka
 echo "Creating topics..."
 TOPICS=(
   "transactions.commands"
+  "transactions.commands.DLT"
   "accounts.events"
+  "accounts.events.DLT"
   "transactions.events"
+  "transactions.events.DLT"
   "notifications.events"
+  "notifications.events.DLT"
   "customers.events.created"
 )
 

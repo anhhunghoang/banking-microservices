@@ -52,10 +52,10 @@ I have provided a script that acts as the starting point for your environment. I
 
 ### Kafka Topics Created
 - `customers.events.created`
-- `transactions.commands`
-- `accounts.events`
-- `transactions.events`
-- `notifications.events`
+- `transactions.commands` (DLT: `transactions.commands.DLT`)
+- `accounts.events` (DLT: `accounts.events.DLT`)
+- `transactions.events` (DLT: `transactions.events.DLT`)
+- `notifications.events` (DLT: `notifications.events.DLT`)
 
 ---
 

@@ -15,8 +15,25 @@ This document records major bugs encountered during the development of the Banki
 The `transaction-service` was using `JsonSerializer` in `application.yml`, but the code in `OutboxProcessor` was already converting the payload to a JSON string using `ObjectMapper`. This caused the `JsonSerializer` to treat the JSON string as a regular string and escape it again.
 
 **Fix:**
-- Changed `value-serializer` in `transaction-service` to `org.apache.kafka.common.serialization.StringSerializer`.
-- This ensures the raw JSON string from the Outbox is sent exactly as-is.
+- Changed `value-serializer` in all services (`transaction-service`, `account-service`, `customer-service`) to `org.apache.kafka.common.serialization.StringSerializer`.
+- This ensures the raw JSON string from the Outbox is sent exactly as-is, preventing consumers from failing with `MismatchedInputException`.
+
+---
+
+## 2. Kafka Listener Exception Swallowing
+**Date:** Jan 14, 2026
+**Symptoms:** 
+- Failed messages are silently ignored.
+- No retries occur.
+- Messages never reach the Dead Letter Queue (DLQ).
+
+**Root Cause:**
+Listeners were wrapped in `try-catch` blocks that logged the error but didn't rethrow it. The Spring Kafka container saw a "successful" execution (even though it failed) and committed the offset.
+
+**Fix:**
+- Removed catch blocks in `EventListener` classes.
+- Listeners now `throws Exception`.
+- Configured a global `CommonErrorHandler` with `DeadLetterPublishingRecoverer` in `common-lib` to handle retries and move failed messages to `{topic}.DLT`.
 
 ---
 
@@ -96,3 +113,6 @@ Running a command inside the container using `localhost:9092` fails because Kafk
 - [ ] Use `kafka:29092` for internal docker communication and `localhost:9092` for development machine access.
 - [ ] Include `common-lib` and set `management.tracing.sampling.probability: 1.0` for full visibility.
 - [ ] Ensure `spring.kafka.template.observation-enabled: true` and `spring.kafka.listener.observation-enabled: true` are set in `application.yml`.
+- [ ] Use centralized constants (`EventTypes`, `Topics`, `ErrorCodes`) in `common-lib` to avoid typos across services.
+- [ ] Do NOT swallow exceptions in `@KafkaListener` methods; let them propagate to the `CommonErrorHandler` for DLQ support.
+- [ ] Ensure DLT topics are created in `infra/kafka/init-topics.sh`.
