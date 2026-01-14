@@ -97,4 +97,76 @@ class TransactionServiceImplTest {
         verify(outboxRepository).save(any(OutboxEvent.class));
         verify(tracingService, times(2)).getCurrentTraceId();
     }
+
+    @Test
+    void shouldCreateWithdrawalTransaction_AndSaveOutboxEvent() {
+        // Arrange
+        UUID transactionId = UUID.randomUUID();
+        Transaction savedTransaction = Transaction.builder()
+                .id(transactionId)
+                .accountId(accountId)
+                .amount(BigDecimal.valueOf(50.00))
+                .currency("USD")
+                .type(Transaction.TransactionType.WITHDRAWAL)
+                .status(Transaction.TransactionStatus.PENDING)
+                .build();
+
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(savedTransaction);
+        when(tracingService.getCurrentTraceId()).thenReturn("test-trace-id");
+
+        TransactionRequest withdrawRequest = TransactionRequest.builder()
+                .accountId(accountId)
+                .amount(BigDecimal.valueOf(50.00))
+                .currency("USD")
+                .build();
+
+        // Act
+        TransactionResponse response = transactionService.createWithdrawal(withdrawRequest);
+
+        // Assert
+        assertThat(response.getAccountId()).isEqualTo(accountId);
+        assertThat(response.getType()).isEqualTo("WITHDRAWAL");
+        assertThat(response.getStatus()).isEqualTo("PENDING");
+
+        verify(transactionRepository).save(any(Transaction.class));
+        verify(outboxRepository).save(any(OutboxEvent.class));
+    }
+
+    @Test
+    void shouldCreateTransferTransaction_AndSaveOutboxEvent() {
+        // Arrange
+        UUID transactionId = UUID.randomUUID();
+        UUID toAccountId = UUID.randomUUID();
+        Transaction savedTransaction = Transaction.builder()
+                .id(transactionId)
+                .fromAccountId(accountId)
+                .toAccountId(toAccountId)
+                .amount(BigDecimal.valueOf(200.00))
+                .currency("USD")
+                .type(Transaction.TransactionType.TRANSFER)
+                .status(Transaction.TransactionStatus.PENDING)
+                .build();
+
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(savedTransaction);
+        when(tracingService.getCurrentTraceId()).thenReturn("test-trace-id");
+
+        com.banking.transaction.dto.TransferRequest transferRequest = com.banking.transaction.dto.TransferRequest
+                .builder()
+                .fromAccountId(accountId)
+                .toAccountId(toAccountId)
+                .amount(BigDecimal.valueOf(200.00))
+                .currency("USD")
+                .build();
+
+        // Act
+        TransactionResponse response = transactionService.createTransfer(transferRequest);
+
+        // Assert
+        assertThat(response.getId()).isEqualTo(transactionId);
+        assertThat(response.getType()).isEqualTo("TRANSFER");
+        assertThat(response.getStatus()).isEqualTo("PENDING");
+
+        verify(transactionRepository).save(any(Transaction.class));
+        verify(outboxRepository).save(any(OutboxEvent.class));
+    }
 }
