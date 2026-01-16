@@ -54,3 +54,13 @@ project(':common-lib') {
     bootJar.enabled = false
     jar.enabled = true
 }
+
+project(':notification-service') {
+    bootJar.enabled = false
+    jar.enabled = true
+}
+
+project(':api-gateway') {
+    bootJar.enabled = false
+    jar.enabled = true
+}
